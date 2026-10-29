@@ -158,3 +158,29 @@ button{font-family:inherit;-webkit-appearance:none;appearance:none;touch-action:
   .lightbox-close{top:max(14px,env(safe-area-inset-top));right:18px}
   .buttons-container .btn{flex:1 1 100%}
 }
+
+/* ===== Fotos instantáneas (estilo Polaroid que se revela) ===== */
+.polaroid{position:relative;margin:0;padding:10px 10px 0;border:0;border-radius:3px;background:linear-gradient(#f8f2e7,#ece1cd);
+  box-shadow:0 14px 28px rgba(0,0,0,.45),0 2px 4px rgba(0,0,0,.3),inset 0 0 18px rgba(120,90,50,.18);backdrop-filter:none;-webkit-backdrop-filter:none;transition:transform .35s ease}
+.polaroid:nth-child(odd){transform:rotate(-2.2deg)}
+.polaroid:nth-child(even){transform:rotate(2.4deg)}
+.polaroid:nth-child(3n){transform:rotate(-.6deg)}
+.polaroid:nth-child(3n+1)::before{content:"";position:absolute;top:-11px;left:50%;width:72px;height:24px;margin-left:-36px;transform:rotate(-3deg);background:rgba(228,194,122,.55);box-shadow:0 1px 3px rgba(0,0,0,.25);z-index:3}
+.polaroid .photo-placeholder{height:auto;aspect-ratio:1/1;margin:0;border-radius:2px;background-color:#2a2220;
+  box-shadow:inset 0 0 0 1px rgba(0,0,0,.4),inset 0 0 24px rgba(0,0,0,.5);transition:filter 3.4s ease var(--d,0ms)}
+.polaroid .photo-placeholder::before{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;background:linear-gradient(135deg,rgba(255,255,255,.2),transparent 42%)}
+/* revelado: empieza oscura y borrosa y "aparece" al entrar en pantalla */
+.polaroid:not(.visible) .photo-placeholder{filter:brightness(.12) sepia(1) blur(7px) contrast(.7)}
+.polaroid.visible .photo-placeholder{filter:none}
+.polaroid p{font-family:'Caveat',cursive;font-size:1.55rem;font-weight:600;line-height:1.2;text-align:center;color:#3b2a24;padding:10px 4px 12px;min-height:3rem}
+.polaroid:hover{transform:scale(1.06) rotate(0deg);z-index:5}
+.masonry-gallery{grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:1.6rem}
+#lightbox-img{border:14px solid #f6efe4;border-bottom-width:60px;border-radius:3px;box-shadow:0 20px 60px rgba(0,0,0,.65)}
+@media(max-width:768px){.masonry-gallery{grid-template-columns:repeat(2,1fr);gap:1.2rem}#lightbox-img{border-width:10px;border-bottom-width:42px}}
+@media(prefers-reduced-motion:reduce){.polaroid:not(.visible) .photo-placeholder{filter:none}}
+
+.highlight-gallery,.masonry-gallery{align-items:start}
+.polaroid p{overflow-wrap:anywhere}
+
+.vacio{grid-column:1/-1;padding:2rem 1rem;font-size:1rem}
+.vacio b{color:var(--gold);font-weight:500}

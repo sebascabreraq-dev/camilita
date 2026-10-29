@@ -55,16 +55,24 @@ function actualizarDock(activa) {
 }
 
 // Crea las fotos a partir de data-fotos / data-total (foto1.jpg…, galeria1.jpg…)
+// El texto de cada foto sale del nombre del archivo: "01 Primer cafe.jpg" -> "Primer cafe"
+const textoDe = n => n.replace(/\.[^.]+$/, "").replace(/^\d+[\s._-]+/, "").replace(/_/g, " ").trim();
+const esc = t => t.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const enc = n => encodeURIComponent(n).replace(/'/g, "%27");
+
 function generarFotos() {
   document.querySelectorAll("[data-fotos]").forEach(box => {
-    const base = box.dataset.fotos, total = +box.dataset.total;
-    const labels = (box.dataset.labels || "").split(",");
-    for (let i = 1; i <= total; i++) {
-      const src = `${base}${i}.jpg`;
-      const foto = `<div class="${box.classList.contains("masonry-gallery") ? "masonry-item" : "photo-placeholder"} view-img" data-src="${src}" style="background-image:url('${src}')"><ion-icon name="scan-outline"></ion-icon></div>`;
-      box.insertAdjacentHTML("beforeend", box.classList.contains("masonry-gallery")
-        ? foto : `<div class="polaroid">${foto}<p>${labels[i - 1] || ""}</p></div>`);
+    const clave = box.dataset.fotos, lista = (window.FOTOS && window.FOTOS[clave]) || [];
+    if (!lista.length) {
+      box.innerHTML = `<p class="vacio">Aún no hay fotos. Cópialas en <b>fotos/${clave}</b> y escribe sus nombres en <b>fotos.js</b>.</p>`;
+      return;
     }
+    lista.forEach((nombre, i) => {
+      const src = `fotos/${clave}/${enc(nombre)}`;
+      box.insertAdjacentHTML("beforeend", `<figure class="polaroid" style="--d:${(i % 6) * 220}ms">
+        <div class="photo-placeholder view-img" data-src="${src}"><ion-icon name="scan-outline"></ion-icon></div>
+        <p>${esc(textoDe(nombre))}</p></figure>`);
+    });
   });
 }
 
@@ -72,8 +80,13 @@ function generarFotos() {
 let observer;
 function reiniciarAnimaciones() {
   if (observer) observer.disconnect();
-  observer = new IntersectionObserver(es => es.forEach(e => e.isIntersecting && e.target.classList.add("visible")), { threshold: 0.15 });
-  document.querySelectorAll(".fade-in").forEach(el => observer.observe(el));
+  observer = new IntersectionObserver(es => es.forEach(e => {
+    if (!e.isIntersecting) return;
+    e.target.classList.add("visible");
+    const f = e.target.querySelector(".view-img");   // carga la imagen solo al acercarse
+    if (f && !f.style.backgroundImage) f.style.backgroundImage = `url('${f.dataset.src}')`;
+  }), { threshold: 0.15 });
+  document.querySelectorAll(".fade-in, .polaroid").forEach(el => observer.observe(el));
 }
 
 function activarBotonNo() {
