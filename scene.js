@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 
 const canvas = document.getElementById("scene");
@@ -9,10 +10,10 @@ let renderer;
 try { renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true, powerPreference: "high-performance" }); }
 catch { canvas.remove(); throw new Error("WebGL no disponible"); }
 
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setPixelRatio(Math.min(devicePixelRatio, small ? 1.5 : 2));
 renderer.setClearColor(0x000000, 0);
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.15;
+renderer.toneMappingExposure = 1.0;
 
 const scene = new THREE.Scene();
 const pmrem = new THREE.PMREMGenerator(renderer);
@@ -35,11 +36,11 @@ for (let i = 0; i <= 120; i++) {
 const geo = new THREE.ExtrudeGeometry(shape, { depth: 3, bevelEnabled: true, bevelSegments: 14, steps: 2, bevelSize: 2.6, bevelThickness: 3.2, curveSegments: 64 });
 geo.center(); geo.scale(S, S, S);
 const glass = new THREE.Mesh(geo, new THREE.MeshPhysicalMaterial({
-  color: 0xff6f8f, roughness: 0.1, metalness: 0, transmission: 1, thickness: 2.4, ior: 1.45,
-  attenuationColor: new THREE.Color(0xff2d5c), attenuationDistance: 1.5, clearcoat: 1, envMapIntensity: 1.5
+  color: 0xd4505f, roughness: 0.12, metalness: 0, transmission: 1, thickness: 2.4, ior: 1.45,
+  attenuationColor: new THREE.Color(0xa81f33), attenuationDistance: 2.4, clearcoat: 1, envMapIntensity: 1.5
 }));
 const rim = new THREE.PointLight(0xe4c27a, 30, 20); rim.position.set(-4, 3, 4);
-const fill = new THREE.PointLight(0xff4d7a, 22, 20); fill.position.set(4, -2, 3);
+const fill = new THREE.PointLight(0xe0556a, 12, 20); fill.position.set(4, -2, 3);
 scene.add(glass, rim, fill);
 
 // ---------- Nube de partículas (shader propio) ----------
@@ -74,31 +75,68 @@ const points = new THREE.Points(pg, new THREE.ShaderMaterial({
 }));
 scene.add(points);
 
-// ---------- Rosas procedurales ----------
-// Cada pétalo es un casquete de esfera; se rotan con el ángulo áureo para formar la espiral de la flor
+// ---------- Rosas procedurales (pétalos deformados, fusionados en una sola malla) ----------
+function veinTexture() {
+  const c = document.createElement("canvas"); c.width = 128; c.height = 256;
+  const x = c.getContext("2d"); x.fillStyle = "#808080"; x.fillRect(0, 0, 128, 256);
+  for (let i = 0; i < 52; i++) {
+    const px = Math.random() * 128;
+    x.strokeStyle = Math.random() > 0.5 ? "rgba(255,255,255,.2)" : "rgba(0,0,0,.24)"; x.lineWidth = 0.8 + Math.random() * 1.6;
+    x.beginPath(); x.moveTo(64 + (px - 64) * 0.12, 256); x.quadraticCurveTo(px, 150, 64 + (px - 64) * 1.25, 6 + Math.random() * 60); x.stroke();
+  }
+  return new THREE.CanvasTexture(c);
+}
+// Pétalo: ancho en campana, copa hacia el eje, borde ondulado y punta enrollada hacia afuera
+function petalGeo({ w, h, cup, curl = 0, tilt, rad, ang, y0 = 0, c0, c1 }) {
+  const g = new THREE.PlaneGeometry(1, 1, 12, 14), p = g.attributes.position, col = new Float32Array(p.count * 3);
+  const a = new THREE.Color(c0), b = new THREE.Color(c1), tmp = new THREE.Color(), j = Math.random();
+  for (let i = 0; i < p.count; i++) {
+    const u = p.getX(i) * 2, v = p.getY(i) + 0.5;
+    const width = w * Math.pow(Math.sin(Math.PI * Math.pow(v, 0.7)), 0.65) * (1 + 0.22 * v);
+    const wave = 0.035 * h * Math.sin(u * 5 + v * 4 + j * 6) * v * Math.abs(u);
+    const z = -cup * u * u * (0.55 + 0.45 * v) + curl * h * 3.2 * Math.pow(Math.max(0, v - 0.55), 2) * (0.5 + 0.5 * Math.abs(u)) + wave;
+    p.setXYZ(i, u * width * 0.5, v * h, z);
+    tmp.copy(a).lerp(b, Math.min(1, Math.pow(v, 1.3) * 0.8 + Math.abs(u) * 0.25)); col.set([tmp.r, tmp.g, tmp.b], i * 3);
+  }
+  g.setAttribute("color", new THREE.BufferAttribute(col, 3));
+  g.rotateX(tilt + (Math.random() - 0.5) * 0.08); g.translate(0, y0, rad); g.rotateY(ang + (Math.random() - 0.5) * 0.12);
+  g.computeVertexNormals(); return g;
+}
+function leafGeo() {
+  const g = new THREE.PlaneGeometry(1, 1, 6, 14), p = g.attributes.position, col = new Float32Array(p.count * 3), c = new THREE.Color();
+  for (let i = 0; i < p.count; i++) {
+    const u = p.getX(i) * 2, v = p.getY(i) + 0.5;
+    const width = 0.2 * Math.sin(Math.PI * Math.pow(v, 0.8)) * (1 + 0.07 * Math.sin(v * 70));   // borde dentado
+    p.setXYZ(i, u * width * 0.5, v * 0.62, Math.abs(u) * width * 0.35 - 0.05 * v * v);
+    c.setHex(0x14452a).lerp(new THREE.Color(0x3f8a52), (1 - Math.abs(u)) * 0.5 + v * 0.2); col.set([c.r, c.g, c.b], i * 3);
+  }
+  g.setAttribute("color", new THREE.BufferAttribute(col, 3)); g.computeVertexNormals(); return g;
+}
 function buildRose() {
-  const body = new THREE.Group(), PETALS = 24, GOLDEN = 2.39996;
-  const inner = new THREE.Color(0x6e0a20), outer = new THREE.Color(0xe0345c);
-  for (let i = 0; i < PETALS; i++) {
-    const t = i / (PETALS - 1);
-    const g = new THREE.SphereGeometry(1, 24, 14, 0, Math.PI * (0.8 + 0.25 * t), 0.08, Math.PI * (0.42 + 0.3 * t));
-    const m = new THREE.MeshPhysicalMaterial({ color: inner.clone().lerp(outer, t ** 0.8), roughness: 0.5, side: THREE.DoubleSide,
-      sheen: 1, sheenColor: new THREE.Color(0xff9fb5), sheenRoughness: 0.4, clearcoat: 0.15 });
-    const p = new THREE.Mesh(g, m), r = 0.07 + 0.3 * t ** 0.85;
-    p.scale.set(r, r * (1.25 - 0.55 * t), r * 0.9);
-    p.rotation.set(-0.12 * t * 2.2, i * GOLDEN, 0);
-    p.position.y = 0.02 * (1 - t);
-    body.add(p);
-  }
-  const green = new THREE.MeshStandardMaterial({ color: 0x1f5a35, roughness: 0.6 });
-  const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.026, 1.3, 10), green); stem.position.y = -0.7;
-  const cup = new THREE.Mesh(new THREE.ConeGeometry(0.13, 0.2, 12), green); cup.position.y = -0.18; cup.rotation.x = Math.PI;
-  body.add(stem, cup);
-  for (const [y, a] of [[-0.75, 0.6], [-1.05, -2.5]]) {
-    const leaf = new THREE.Mesh(new THREE.SphereGeometry(1, 16, 8), green);
-    leaf.scale.set(0.2, 0.012, 0.075); leaf.position.set(Math.cos(a) * 0.19, y, Math.sin(a) * 0.19); leaf.rotation.set(0, -a, 0.5);
-    body.add(leaf);
-  }
+  const body = new THREE.Group(), geos = [], vein = veinTexture();
+  // [pétalos, ancho, alto, copa, enrollado, apertura, radio, color base, color borde]
+  [[3, 0.2, 0.36, 0.18, 0, 0.0, 0.025, 0x3a0510, 0x7a0c27], [5, 0.3, 0.46, 0.14, 0, 0.1, 0.06, 0x560814, 0xa8142f],
+   [7, 0.4, 0.5, 0.11, 0.04, 0.26, 0.1, 0x6e0a1c, 0xc9223f], [9, 0.5, 0.53, 0.08, 0.1, 0.46, 0.15, 0x7d0d22, 0xe0395e],
+   [11, 0.62, 0.5, 0.06, 0.18, 0.74, 0.21, 0x8b1228, 0xff7f9c]].forEach(([n, w, h, cup, curl, tilt, rad, c0, c1], k) => {
+    for (let i = 0; i < n; i++) geos.push(petalGeo({ w, h, cup, curl, tilt, rad, ang: (i / n) * Math.PI * 2 + k * 0.9, c0, c1 }));
+  });
+  for (let i = 0; i < 5; i++) geos.push(petalGeo({ w: 0.15, h: 0.36, cup: 0.02, curl: 0.2, tilt: 2.1, rad: 0.07, ang: (i / 5) * Math.PI * 2, y0: -0.08, c0: 0x1a4a2a, c1: 0x3b8350 }));
+  body.add(new THREE.Mesh(mergeGeometries(geos), new THREE.MeshPhysicalMaterial({
+    vertexColors: true, side: THREE.DoubleSide, roughness: 0.52, sheen: 1, sheenColor: new THREE.Color(0xff9fb5), sheenRoughness: 0.35,
+    bumpMap: vein, bumpScale: 1.4, clearcoat: 0.2, clearcoatRoughness: 0.5, envMapIntensity: 1.1 })));
+  const green = new THREE.MeshStandardMaterial({ color: 0x1f5a35, roughness: 0.55, metalness: 0.05 });
+  const curve = new THREE.CatmullRomCurve3([[0, -0.12, 0], [0.05, -0.5, 0.03], [-0.04, -0.95, -0.03], [0, -1.5, 0.02]].map(a => new THREE.Vector3(...a)));
+  body.add(new THREE.Mesh(new THREE.TubeGeometry(curve, 28, 0.022, 10), green));
+  const thorns = [0.25, 0.45, 0.62, 0.8].map((t, i) => {            // espinas a lo largo del tallo
+    const th = new THREE.ConeGeometry(0.018, 0.075, 6); th.translate(0, 0.0375, 0); th.rotateZ(-1.2); th.rotateY(i * 2.2);
+    const pt = curve.getPoint(t); th.translate(pt.x, pt.y, pt.z); return th;
+  });
+  body.add(new THREE.Mesh(mergeGeometries(thorns), green));
+  const leafMat = new THREE.MeshPhysicalMaterial({ vertexColors: true, side: THREE.DoubleSide, roughness: 0.4, clearcoat: 0.3, envMapIntensity: 1 });
+  [[0.35, 1.15, 0.5], [0.62, -1.15, -2.4]].forEach(([t, rz, ry]) => {
+    const l = new THREE.Mesh(leafGeo(), leafMat), pt = curve.getPoint(t);
+    l.position.copy(pt); l.rotation.set(0, ry, rz); body.add(l);
+  });
   return body;
 }
 const roseTemplate = buildRose();
@@ -128,21 +166,23 @@ addEventListener("proposal-yes", () => { burst = 1; });
 
 const st = { p: 0, x: 0, y: 0, s: 1 };
 const smooth = t => t * t * (3 - 2 * t);
-function resize() {
-  renderer.setSize(innerWidth, innerHeight, false);
-  camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
+let VW = innerWidth, VH = innerHeight;
+function resize(force) {   // ignora los cambios de altura de la barra de Safari
+  if (!force && innerWidth === VW && Math.abs(innerHeight - VH) < 160) return;
+  VW = innerWidth; VH = innerHeight;
+  renderer.setSize(VW, VH, false); camera.aspect = VW / VH; camera.updateProjectionMatrix();
 }
-addEventListener("resize", resize); resize();
+addEventListener("resize", () => resize()); resize(true);
 
 const clock = new THREE.Clock();
 renderer.setAnimationLoop(() => {
   const t = clock.getElapsedTime();
-  const p = smooth(Math.min(scrollY / (innerHeight * 0.9), 1));
+  const p = smooth(Math.min(scrollY / (VH * 0.9), 1));
   const visH = 2 * camera.position.z * Math.tan(THREE.MathUtils.degToRad(22.5)), visW = visH * camera.aspect;
   const wide = innerWidth > 900;
   // Destino del corazón: centrado en el hero, luego se desplaza a un lado y se encoge
   const tx = wide ? visW * 0.3 * p : 0, ty = THREE.MathUtils.lerp(0.55, wide ? 0 : visH * 0.34, p);
-  const ts = THREE.MathUtils.lerp(1, wide ? 0.55 : 0.4, p) * (1 + burst * 0.5);
+  const ts = THREE.MathUtils.lerp(wide ? 1 : 0.8, wide ? 0.55 : 0.4, p) * (1 + burst * 0.5);
   st.x += (tx - st.x) * 0.07; st.y += (ty - st.y) * 0.07; st.s += (ts - st.s) * 0.07; st.p += (p - st.p) * 0.06;
 
   mouse.sx += (mouse.x - mouse.sx) * 0.05; mouse.sy += (mouse.y - mouse.sy) * 0.05;

@@ -16,6 +16,16 @@ document.addEventListener("DOMContentLoaded", () => {
   let t = 15;
   const iv = setInterval(() => { countdownEl.textContent = --t; if (t <= 0) clearInterval(iv); }, 1000);
   setTimeout(entrar, 15000);
+  // Corazoncitos (ionicons) flotando por toda la pantalla, detrás de las tarjetas
+  const bg = document.getElementById("background-icons"), total = innerWidth < 800 ? 22 : 42;
+  for (let i = 0; i < total; i++) {
+    const ic = document.createElement("ion-icon");
+    ic.setAttribute("name", Math.random() > 0.35 ? "heart" : "heart-outline");
+    ic.className = "floating-icon";
+    ic.style.cssText = `left:${Math.random() * 100}%;font-size:${0.7 + Math.random() * 1.1}rem;--o:${0.18 + Math.random() * 0.42};--sw:${Math.random() * 90 - 45}px;` +
+      `animation-duration:${14 + Math.random() * 18}s;animation-delay:-${Math.random() * 30}s;color:${["#ff8fa3", "#ff6b8a", "#e4c27a", "#ffb3c1"][i % 4]}`;
+    bg.appendChild(ic);
+  }
   document.getElementById("skip-btn").addEventListener("click", entrar);
 
 });
@@ -133,19 +143,20 @@ document.addEventListener("keydown", e => {
 const fino = matchMedia("(pointer:fine)").matches;
 
 function mejorasUI() {
-  // Titular con entrada letra por letra
+  // Titular con entrada letra por letra (las palabras no se parten en móvil)
   document.querySelectorAll(".hero h1").forEach(h1 => {
     let n = 0;
     const wrap = node => [...node.childNodes].forEach(c => {
-      if (c.nodeType === 3) {
-        const f = document.createDocumentFragment();
-        [...c.textContent].forEach(ch => {
-          const s = document.createElement("span");
-          s.className = "ch"; s.textContent = ch === " " ? "\u00a0" : ch;
-          s.style.animationDelay = 0.25 + n++ * 0.05 + "s"; f.appendChild(s);
-        });
-        c.replaceWith(f);
-      } else wrap(c);
+      if (c.nodeType !== 3) return wrap(c);
+      const f = document.createDocumentFragment();
+      c.textContent.split(/(\s+)/).forEach(w => {
+        if (!w) return;
+        if (/^\s+$/.test(w)) return f.append(" ");
+        const word = document.createElement("span"); word.className = "w";
+        [...w].forEach(ch => { const s = document.createElement("span"); s.className = "ch"; s.textContent = ch; s.style.animationDelay = 0.25 + n++ * 0.05 + "s"; word.append(s); });
+        f.append(word);
+      });
+      c.replaceWith(f);
     });
     wrap(h1);
   });
@@ -170,4 +181,14 @@ function mejorasUI() {
   let tx = innerWidth / 2, ty = innerHeight / 2, x = tx, y = ty;
   addEventListener("pointermove", e => { tx = e.clientX; ty = e.clientY; });
   (function tick() { x += (tx - x) * 0.08; y += (ty - y) * 0.08; glow.style.transform = `translate(${x}px,${y}px)`; requestAnimationFrame(tick); })();
+})();
+
+// Deslizar para cambiar de foto (iPhone / Android)
+(() => {
+  const lb = document.getElementById("lightbox-modal"); let x0 = null;
+  lb.addEventListener("touchstart", e => { x0 = e.touches[0].clientX; }, { passive: true });
+  lb.addEventListener("touchend", e => {
+    if (x0 === null) return;
+    const dx = e.changedTouches[0].clientX - x0; if (Math.abs(dx) > 50) changeImage(dx < 0 ? 1 : -1); x0 = null;
+  }, { passive: true });
 })();
