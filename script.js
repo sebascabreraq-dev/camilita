@@ -1,188 +1,173 @@
+let loaded = false;
+function entrar() {
+  if (loaded) return; loaded = true;
+  const loader = document.getElementById("loader-screen");
+  loader.style.opacity = "0";
+  setTimeout(() => {
+    loader.style.display = "none";
+    document.getElementById("app-container").classList.remove("hidden");
+    document.getElementById("bottom-dock").classList.remove("hidden");
+    cargarComponente("home");
+  }, 800);
+}
+
 document.addEventListener("DOMContentLoaded", () => {
-    const loaderScreen = document.getElementById("loader-screen");
-    const bottomDock = document.getElementById("bottom-dock");
-    const countdownEl = document.getElementById("countdown");
-    const appContainer = document.getElementById("app-container");
-    
-    // --- LÓGICA DE CARGA INICIAL ---
-    let timeLeft = 15;
-    const timerInterval = setInterval(() => {
-        timeLeft--;
-        countdownEl.textContent = timeLeft;
-        if (timeLeft <= 0) clearInterval(timerInterval);
-    }, 1000);
+  const countdownEl = document.getElementById("countdown");
+  let t = 15;
+  const iv = setInterval(() => { countdownEl.textContent = --t; if (t <= 0) clearInterval(iv); }, 1000);
+  setTimeout(entrar, 15000);
+  document.getElementById("skip-btn").addEventListener("click", entrar);
 
-    setTimeout(() => {
-        loaderScreen.style.opacity = '0';
-        setTimeout(() => {
-            loaderScreen.style.display = 'none';
-            appContainer.classList.remove('hidden');
-            bottomDock.classList.remove('hidden'); 
-            
-            // Cargar el componente principal por defecto
-            cargarComponente('home');
-            
-        }, 1000); 
-    }, 15000); 
-
-    // --- GENERAR FONDO DE ICONOS ---
-    const bgContainer = document.getElementById("background-icons");
-    const iconsToUse = ["heart", "sparkles", "star", "heart-half"];
-    for (let i = 0; i < 35; i++) {
-        const icon = document.createElement("ion-icon");
-        icon.setAttribute("name", iconsToUse[Math.floor(Math.random() * iconsToUse.length)]);
-        icon.classList.add("floating-icon");
-        icon.style.left = `${Math.random() * 100}vw`;
-        icon.style.fontSize = `${Math.random() * 2 + 0.5}rem`;
-        icon.style.animationDuration = `${Math.random() * 15 + 15}s`;
-        icon.style.animationDelay = `-${Math.random() * 20}s`;
-        icon.style.opacity = Math.random() * 0.06 + 0.02; 
-        bgContainer.appendChild(icon);
-    }
 });
 
-// ==========================================
-// RUTEADOR: CARGAR COMPONENTES EXTERNOS
-// ==========================================
+// ---------- Ruteador ----------
 async function cargarComponente(vista) {
-    try {
-        // Carga el archivo HTML correspondiente (home.html o galeria.html)
-        const response = await fetch(`${vista}.html`);
-        const html = await response.text();
-        
-        // Inyecta el HTML en el contenedor principal
-        document.getElementById('app-container').innerHTML = html;
-        
-        // Actualiza la estética del Dock inferior
-        actualizarDock(vista);
-
-        // Reiniciar funcionalidades para los elementos recién cargados
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-        reiniciarAnimaciones();
-        inicializarLightbox();
-        
-        // Si estamos en 'home', reactivar el botón "No" juguetón
-        if(vista === 'home') {
-            activarBotonNo();
-        }
-
-    } catch (error) {
-        console.error("Error al cargar el componente:", error);
-    }
+  try {
+    const res = await fetch(`${vista}.html`);
+    document.getElementById("app-container").innerHTML = await res.text();
+    actualizarDock(vista);
+    generarFotos();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    reiniciarAnimaciones();
+    inicializarLightbox();
+    mejorasUI();
+    if (vista === "home") activarBotonNo();
+  } catch (e) { console.error("Error al cargar el componente:", e); }
 }
 
-function actualizarDock(vistaActiva) {
-    const btnPrincipal = document.getElementById("btn-principal");
-    const btnGaleria = document.getElementById("btn-galeria");
-    const btnMetaforas = document.getElementById("btn-metaforas");
-
-    // 1. Apagamos todos los botones primero y ponemos sus iconos en "outline"
-    [btnPrincipal, btnGaleria, btnMetaforas].forEach(btn => {
-        btn.classList.remove("active");
-    });
-    btnPrincipal.querySelector("ion-icon").setAttribute("name", "home-outline");
-    btnGaleria.querySelector("ion-icon").setAttribute("name", "images-outline");
-    btnMetaforas.querySelector("ion-icon").setAttribute("name", "rose-outline");
-
-    // 2. Encendemos solo el botón de la vista activa y rellenamos su icono
-    if (vistaActiva === 'home') {
-        btnPrincipal.classList.add("active");
-        btnPrincipal.querySelector("ion-icon").setAttribute("name", "home"); 
-    } else if (vistaActiva === 'galeria') {
-        btnGaleria.classList.add("active");
-        btnGaleria.querySelector("ion-icon").setAttribute("name", "images"); 
-    } else if (vistaActiva === 'metaforas') {
-        btnMetaforas.classList.add("active");
-        btnMetaforas.querySelector("ion-icon").setAttribute("name", "rose"); 
-    }
+function actualizarDock(activa) {
+  const mapa = { home: ["btn-principal", "home"], metaforas: ["btn-metaforas", "rose"], galeria: ["btn-galeria", "images"] };
+  for (const [vista, [id, icono]] of Object.entries(mapa)) {
+    const btn = document.getElementById(id), on = vista === activa;
+    btn.classList.toggle("active", on);
+    btn.querySelector("ion-icon").setAttribute("name", on ? icono : icono + "-outline");
+  }
 }
 
-// ==========================================
-// FUNCIONES REUSABLES (Animaciones, Botones, Visor)
-// ==========================================
+// Crea las fotos a partir de data-fotos / data-total (foto1.jpg…, galeria1.jpg…)
+function generarFotos() {
+  document.querySelectorAll("[data-fotos]").forEach(box => {
+    const base = box.dataset.fotos, total = +box.dataset.total;
+    const labels = (box.dataset.labels || "").split(",");
+    for (let i = 1; i <= total; i++) {
+      const src = `${base}${i}.jpg`;
+      const foto = `<div class="${box.classList.contains("masonry-gallery") ? "masonry-item" : "photo-placeholder"} view-img" data-src="${src}" style="background-image:url('${src}')"><ion-icon name="scan-outline"></ion-icon></div>`;
+      box.insertAdjacentHTML("beforeend", box.classList.contains("masonry-gallery")
+        ? foto : `<div class="polaroid">${foto}<p>${labels[i - 1] || ""}</p></div>`);
+    }
+  });
+}
+
+// ---------- Animaciones y botones ----------
 let observer;
 function reiniciarAnimaciones() {
-    if(observer) observer.disconnect();
-    const observerOptions = { root: null, rootMargin: "0px", threshold: 0.15 };
-    observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) entry.target.classList.add("visible");
-        });
-    }, observerOptions);
-    const fadeElements = document.querySelectorAll(".fade-in");
-    fadeElements.forEach(el => observer.observe(el));
+  if (observer) observer.disconnect();
+  observer = new IntersectionObserver(es => es.forEach(e => e.isIntersecting && e.target.classList.add("visible")), { threshold: 0.15 });
+  document.querySelectorAll(".fade-in").forEach(el => observer.observe(el));
 }
 
 function activarBotonNo() {
-    const btnNo = document.getElementById("btn-no");
-    if(btnNo) {
-        btnNo.addEventListener("mouseover", () => {
-            const x = Math.random() * (window.innerWidth / 2) - (window.innerWidth / 4);
-            const y = Math.random() * 100 - 50;
-            btnNo.style.transform = `translate(${x}px, ${y}px)`;
-        });
-    }
+  const no = document.getElementById("btn-no");
+  if (!no) return;
+  const huir = () => {
+    no.style.transform = `translate(${Math.random() * 160 - 80}px, ${Math.random() * 70 - 35}px)`;
+  };
+  no.addEventListener("mouseover", huir);
+  no.addEventListener("click", huir);
+  no.addEventListener("touchstart", e => { e.preventDefault(); huir(); }, { passive: false });
 }
 
 function acceptProposal() {
-    const successMsg = document.getElementById("success-msg");
-    const buttonsContainer = document.querySelector(".buttons-container");
-    buttonsContainer.style.display = "none";
-    successMsg.classList.remove("hidden");
-    successMsg.style.color = "#ff758c";
-    successMsg.style.fontSize = "1.8rem";
-    successMsg.style.marginTop = "2rem";
-    successMsg.style.fontFamily = "'Playfair Display', serif";
+  document.getElementById("pregunta").classList.add("hidden");
+  document.getElementById("success-msg").classList.remove("hidden");
+  confeti();
+  window.dispatchEvent(new Event("proposal-yes"));
 }
 
-// ==========================================
-// LÓGICA DEL VISOR DE FOTOS
-// ==========================================
-let currentGalleryArray = []; 
-let currentPhotoIndex = 0;    
+function confeti() {
+  for (let i = 0; i < 40; i++) {
+    const h = document.createElement("ion-icon");
+    h.setAttribute("name", "heart");
+    Object.assign(h.style, { position: "fixed", left: Math.random() * 100 + "vw", bottom: "-30px", zIndex: 9998,
+      color: ["#ff8fa3", "#e4c27a", "#e04e72"][i % 3], fontSize: Math.random() * 1.6 + 0.8 + "rem",
+      transition: `transform ${3 + Math.random() * 3}s ease-out, opacity 5s`, pointerEvents: "none" });
+    document.body.appendChild(h);
+    requestAnimationFrame(() => { h.style.transform = `translateY(-${80 + Math.random() * 30}vh) rotate(${Math.random() * 360}deg)`; h.style.opacity = 0; });
+    setTimeout(() => h.remove(), 7000);
+  }
+}
 
+// ---------- Visor de fotos ----------
+let galeria = [], idx = 0;
 function inicializarLightbox() {
-    const images = document.querySelectorAll('.view-img');
-    images.forEach((imgEl, index) => {
-        imgEl.addEventListener('click', () => {
-            currentGalleryArray = Array.from(images).map(el => el.getAttribute('data-src'));
-            currentPhotoIndex = index;
-            abrirLightbox();
-        });
-    });
+  const imgs = document.querySelectorAll(".view-img");
+  imgs.forEach((el, i) => el.addEventListener("click", () => {
+    galeria = Array.from(imgs).map(e => e.dataset.src);
+    idx = i; abrirLightbox();
+  }));
 }
-
+function mostrar() {
+  const img = document.getElementById("lightbox-img");
+  img.src = galeria[idx];
+  document.getElementById("lightbox-count").textContent = `${idx + 1} / ${galeria.length}`;
+  img.style.animation = "none"; img.offsetHeight; img.style.animation = "zoomIn .3s ease";
+}
 function abrirLightbox() {
-    const lightboxModal = document.getElementById('lightbox-modal');
-    const lightboxImg = document.getElementById('lightbox-img');
-    lightboxImg.src = currentGalleryArray[currentPhotoIndex];
-    lightboxModal.classList.remove('hidden');
-    document.body.style.overflow = "hidden";
+  mostrar();
+  document.getElementById("lightbox-modal").classList.remove("hidden");
+  document.body.style.overflow = "hidden";
 }
-
-function changeImage(direction) {
-    currentPhotoIndex += direction;
-    if (currentPhotoIndex < 0) currentPhotoIndex = currentGalleryArray.length - 1;
-    else if (currentPhotoIndex >= currentGalleryArray.length) currentPhotoIndex = 0;
-
-    const lightboxImg = document.getElementById('lightbox-img');
-    lightboxImg.src = currentGalleryArray[currentPhotoIndex];
-    
-    lightboxImg.style.animation = 'none';
-    lightboxImg.offsetHeight; 
-    lightboxImg.style.animation = 'zoomIn 0.3s ease';
-}
-
+function changeImage(d) { idx = (idx + d + galeria.length) % galeria.length; mostrar(); }
 function closeLightbox() {
-    document.getElementById('lightbox-modal').classList.add('hidden');
-    document.body.style.overflow = "auto"; 
+  document.getElementById("lightbox-modal").classList.add("hidden");
+  document.body.style.overflow = "auto";
+}
+document.addEventListener("keydown", e => {
+  if (document.getElementById("lightbox-modal").classList.contains("hidden")) return;
+  if (e.key === "ArrowRight") changeImage(1);
+  if (e.key === "ArrowLeft") changeImage(-1);
+  if (e.key === "Escape") closeLightbox();
+});
+
+// ---------- Detalles de interfaz ----------
+const fino = matchMedia("(pointer:fine)").matches;
+
+function mejorasUI() {
+  // Titular con entrada letra por letra
+  document.querySelectorAll(".hero h1").forEach(h1 => {
+    let n = 0;
+    const wrap = node => [...node.childNodes].forEach(c => {
+      if (c.nodeType === 3) {
+        const f = document.createDocumentFragment();
+        [...c.textContent].forEach(ch => {
+          const s = document.createElement("span");
+          s.className = "ch"; s.textContent = ch === " " ? "\u00a0" : ch;
+          s.style.animationDelay = 0.25 + n++ * 0.05 + "s"; f.appendChild(s);
+        });
+        c.replaceWith(f);
+      } else wrap(c);
+    });
+    wrap(h1);
+  });
+  if (!fino) return;
+  // Inclinación 3D con brillo que sigue al puntero
+  document.querySelectorAll(".glass-item").forEach(el => {
+    el.classList.add("tilt");
+    el.addEventListener("pointermove", e => {
+      const r = el.getBoundingClientRect(), x = (e.clientX - r.left) / r.width, y = (e.clientY - r.top) / r.height;
+      el.style.setProperty("--ry", (x - 0.5) * 12 + "deg");
+      el.style.setProperty("--rx", (0.5 - y) * 12 + "deg");
+      el.style.setProperty("--mx", x * 100 + "%"); el.style.setProperty("--my", y * 100 + "%");
+    });
+    el.addEventListener("pointerleave", () => { el.style.setProperty("--rx", "0deg"); el.style.setProperty("--ry", "0deg"); });
+  });
 }
 
-document.addEventListener('keydown', (e) => {
-    const modal = document.getElementById('lightbox-modal');
-    if (!modal.classList.contains('hidden')) {
-        if (e.key === 'ArrowRight') changeImage(1);
-        if (e.key === 'ArrowLeft') changeImage(-1);
-        if (e.key === 'Escape') closeLightbox();
-    }
-});
+// Luz que sigue al cursor (con inercia)
+(() => {
+  const glow = document.getElementById("cursor-glow");
+  if (!glow || !fino) return;
+  let tx = innerWidth / 2, ty = innerHeight / 2, x = tx, y = ty;
+  addEventListener("pointermove", e => { tx = e.clientX; ty = e.clientY; });
+  (function tick() { x += (tx - x) * 0.08; y += (ty - y) * 0.08; glow.style.transform = `translate(${x}px,${y}px)`; requestAnimationFrame(tick); })();
+})();

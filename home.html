@@ -1,70 +1,49 @@
-<!-- SECCIÓN: INICIO Y MODELO 3D -->
-<section class="screen" id="meses">
-    <div class="content liquid-glass fade-in">
-        <ion-icon name="calendar-outline" class="main-icon"></ion-icon>
-        <h1>6 Meses Contigo</h1>
-        
-        <!-- MODELO 3D: Corazón (Enlace público y optimizado) -->
-        <model-viewer 
-            src="https://modelviewer.dev/shared-assets/models/Heart.glb" 
-            alt="Un corazón en 3D" 
-            auto-rotate 
-            camera-controls 
-            disable-zoom 
-            shadow-intensity="1"
-            class="modelo-3d">
-        </model-viewer>
-
-        <p>Medio año ya, y siento que el tiempo pasa volando cuando estoy a tu lado. Desde esos ricos desayunos y las salidas improvisadas, hasta cada momento tranquilo compartiendo juntos. Cada día contigo es único, y la verdad, no lo cambiaría por nada.</p>
-        <div class="scroll-indicator"><ion-icon name="chevron-down-outline" class="bounce"></ion-icon></div>
-    </div>
+<section class="screen hero" id="meses">
+  <div class="content fade-in">
+    <p class="eyebrow">Una carta, un aniversario</p>
+    <div class="heart-slot" aria-hidden="true"></div>
+    <h1>6 meses <em>contigo</em></h1>
+    <p class="lead">Medio año ya, y siento que el tiempo pasa volando cuando estoy a tu lado. Desde esos ricos desayunos y las salidas improvisadas, hasta cada momento tranquilo compartiendo juntos. Cada día contigo es único, y la verdad, no lo cambiaría por nada.</p>
+    <div class="scroll-indicator"><ion-icon name="chevron-down-outline" class="bounce"></ion-icon></div>
+  </div>
 </section>
 
-<!-- SECCIÓN: RECUERDOS DESTACADOS -->
 <section class="screen" id="recuerdos">
-    <div class="content liquid-glass fade-in wide-content">
-        <ion-icon name="camera-outline" class="main-icon"></ion-icon>
-        <h2>Nuestras Aventuras</h2>
-        <p class="subtitle">Toca cualquier foto para verla bien. Aquí están nuestros mejores momentos.</p>
-        
-        <div class="highlight-gallery">
-            <div class="polaroid liquid-glass"><div class="photo-placeholder view-img" data-src="foto1.jpg" style="background-image: url('foto1.jpg');"><ion-icon name="scan-outline"></ion-icon></div><p>Mes 1</p></div>
-            <div class="polaroid liquid-glass"><div class="photo-placeholder view-img" data-src="foto2.jpg" style="background-image: url('foto2.jpg');"><ion-icon name="scan-outline"></ion-icon></div><p>Mes 2</p></div>
-            <div class="polaroid liquid-glass"><div class="photo-placeholder view-img" data-src="foto3.jpg" style="background-image: url('foto3.jpg');"><ion-icon name="scan-outline"></ion-icon></div><p>Mes 3</p></div>
-            <div class="polaroid liquid-glass"><div class="photo-placeholder view-img" data-src="foto4.jpg" style="background-image: url('foto4.jpg');"><ion-icon name="scan-outline"></ion-icon></div><p>Mes 4</p></div>
-            <div class="polaroid liquid-glass"><div class="photo-placeholder view-img" data-src="foto5.jpg" style="background-image: url('foto5.jpg');"><ion-icon name="scan-outline"></ion-icon></div><p>Mes 5</p></div>
-            <div class="polaroid liquid-glass"><div class="photo-placeholder view-img" data-src="foto6.jpg" style="background-image: url('foto6.jpg');"><ion-icon name="scan-outline"></ion-icon></div><p>Mes 6</p></div>
-            <div class="polaroid liquid-glass"><div class="photo-placeholder view-img" data-src="foto7.jpg" style="background-image: url('foto7.jpg');"><ion-icon name="scan-outline"></ion-icon></div><p>Aventura</p></div>
-            <div class="polaroid liquid-glass"><div class="photo-placeholder view-img" data-src="foto8.jpg" style="background-image: url('foto8.jpg');"><ion-icon name="scan-outline"></ion-icon></div><p>Sonrisas</p></div>
-            <div class="polaroid liquid-glass"><div class="photo-placeholder view-img" data-src="foto9.jpg" style="background-image: url('foto9.jpg');"><ion-icon name="scan-outline"></ion-icon></div><p>Tú y yo</p></div>
-            <div class="polaroid liquid-glass"><div class="photo-placeholder view-img" data-src="foto10.jpg" style="background-image: url('foto10.jpg');"><ion-icon name="scan-outline"></ion-icon></div><p>Nuestro lugar</p></div>
-        </div>
-    </div>
+  <div class="content wide-content fade-in">
+    <p class="eyebrow">Nuestras aventuras</p>
+    <h2>Seis meses, seis capítulos</h2>
+    <p class="subtitle">Toca cualquier foto para verla bien.</p>
+    <div class="highlight-gallery" data-fotos="foto" data-total="10"
+         data-labels="Mes 1,Mes 2,Mes 3,Mes 4,Mes 5,Mes 6,Aventura,Sonrisas,Tú y yo,Nuestro lugar"></div>
+  </div>
 </section>
 
-<!-- SECCIÓN: RAZONES -->
 <section class="screen" id="razones">
-    <div class="content liquid-glass fade-in">
-        <ion-icon name="list-outline" class="main-icon"></ion-icon>
-        <h2>¿Por qué me gustas tanto?</h2>
-        <ul class="reasons-list">
-            <li class="liquid-glass-item"><ion-icon name="restaurant-outline"></ion-icon><span>Por esas salidas a comer rico y lo bien que la pasamos hablando de todo y de nada.</span></li>
-            <li class="liquid-glass-item"><ion-icon name="time-outline"></ion-icon><span>Por cómo haces que las horas pasen volando cuando estamos juntos.</span></li>
-            <li class="liquid-glass-item"><ion-icon name="sparkles-outline"></ion-icon><span>Por ser mi cómplice favorita y alegrar mis días con tu forma de ser.</span></li>
-        </ul>
-    </div>
+  <div class="content fade-in">
+    <p class="eyebrow">Razones</p>
+    <h2>¿Por qué me gustas tanto?</h2>
+    <ul class="reasons-list">
+      <li class="glass-item"><span class="num">01</span><span>Por esas salidas a comer rico y lo bien que la pasamos hablando de todo y de nada.</span></li>
+      <li class="glass-item"><span class="num">02</span><span>Por cómo haces que las horas pasen volando cuando estamos juntos.</span></li>
+      <li class="glass-item"><span class="num">03</span><span>Por ser mi cómplice favorita y alegrar mis días con tu forma de ser.</span></li>
+    </ul>
+  </div>
 </section>
 
-<!-- SECCIÓN: FINAL -->
 <section class="screen" id="final">
-    <div class="content liquid-glass fade-in">
-        <ion-icon name="heart" class="main-icon solid-heart pulse-icon"></ion-icon>
-        <p class="final-text">Sé que a veces no soy de muchas palabras, pero si hoy me preguntaran si elegiría pasar por todo esto de nuevo, mi respuesta siempre sería la misma.</p>
-        <h2 class="big-question">Y te lo preguntaría mil y una veces más...<br>¿Quieres ser mi novia?</h2>
-        <div class="buttons-container">
-            <button class="btn yes-btn liquid-glass-btn" onclick="acceptProposal()">¡Obvio que sí!</button>
-            <button class="btn no-btn liquid-glass-btn" id="btn-no">Nop</button>
-        </div>
-        <p id="success-msg" class="hidden">¡Sabía que dirías que sí! ❤️ Te amo muchísimo.</p>
+  <div class="content fade-in final-card">
+    <ion-icon name="heart" class="main-icon pulse-icon"></ion-icon>
+    <div id="pregunta">
+      <p class="lead">Sé que a veces no soy de muchas palabras, pero si hoy me preguntaran si elegiría pasar por todo esto de nuevo, mi respuesta siempre sería la misma.</p>
+      <h2 class="big-question">Y te lo preguntaría mil y una veces más…<br><em>¿Quieres ser mi novia?</em></h2>
+      <div class="buttons-container">
+        <button class="btn yes-btn" onclick="acceptProposal()">¡Obvio que sí!</button>
+        <button class="btn no-btn" id="btn-no">Nop</button>
+      </div>
     </div>
+    <div id="success-msg" class="hidden">
+      <h2 class="big-question"><em>¡Sabía que dirías que sí!</em></h2>
+      <p class="lead">Te amo muchísimo. ❤️</p>
+    </div>
+  </div>
 </section>
